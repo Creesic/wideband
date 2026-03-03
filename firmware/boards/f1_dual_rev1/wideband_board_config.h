@@ -3,9 +3,9 @@
 // TS settings
 #define TS_SIGNATURE "rusEFI 2024.02.11.wideband_dual"
 
-// This board implements two channels
-#define AFR_CHANNELS 2
-#define EGT_CHANNELS 2
+// Single-channel output only (ch0). Set to 2 for dual-channel.
+#define AFR_CHANNELS 1
+#define EGT_CHANNELS 0
 
 // Fundamental board constants
 #define VCC_VOLTS (3.3f)

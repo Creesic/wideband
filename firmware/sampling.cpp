@@ -70,6 +70,7 @@ float Sampler::GetSensorTemperature() const
 
     switch (GetSensorType()) {
         case SensorType::LSU49:
+        case SensorType::FAE_LSU49:
             return interpolate2d(esr, lsu49TempBins, lsu49TempValues);
         case SensorType::LSU42:
             return interpolate2d(esr, lsu42TempBins, lsu42TempValues);

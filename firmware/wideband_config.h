@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "io_pins.h"
 #include "wideband_board_config.h"
 
@@ -54,3 +56,24 @@
 #define HEATER_SUPPLY_ON_VOLTAGE 9.5
 // mininal heater voltage to continue heating
 #define HEATER_SUPPLY_OFF_VOLTAGE 8.5
+
+// TunerStudio-adjustable heater thresholds (0.1V steps: 85 = 8.5V)
+struct HeaterConfig {
+    uint8_t HeaterSupplyOffVoltage;  // 0.1V steps, 25.5V max
+    uint8_t HeaterSupplyOnVoltage;   // 0.1V steps
+    uint8_t PreheatTimeSec;
+    uint8_t pad[5];
+};
+static_assert(sizeof(HeaterConfig) == 8, "HeaterConfig size");
+
+// *******************************
+// Pump: start before closed loop to avoid Nernst voltage clamp near 0V
+// *******************************
+#ifndef START_PUMP_TEMP_OFFSET
+#define START_PUMP_TEMP_OFFSET (200.0f)
+#endif
+
+// Temperature offset for sensor detection (drive pump ±1mA, measure Nernst amplitude)
+#ifndef START_SENSOR_DETECTION_TEMP_OFFSET
+#define START_SENSOR_DETECTION_TEMP_OFFSET (300.0f)
+#endif

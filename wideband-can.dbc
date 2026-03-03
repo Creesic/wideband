@@ -1,7 +1,6 @@
 VERSION ""
 
-
-NS_ : 
+NS_ :
 	NS_DESC_
 	CM_
 	BA_DEF_
@@ -22,7 +21,6 @@ NS_ :
 	SIG_GROUP_
 	SIG_VALTYPE_
 	SIGTYPE_VALTYPE_
-	BO_TX_BU_
 	BA_DEF_REL_
 	BA_REL_
 	BA_DEF_DEF_REL_
@@ -35,31 +33,50 @@ BS_:
 
 BU_: WidebandController ECU
 
-
 BO_ 400 WidebandStandardData: 8 WidebandController
- SG_ Lambda : 16|16@1+ (0.0001,0) [0.5|2] "lambda"  ECU
- SG_ Version : 0|8@1+ (1,0) [0|0] ""  ECU
- SG_ Valid : 8|8@1+ (1,0) [0|1] ""  ECU
- SG_ TemperatureC : 32|16@1+ (1,0) [0|1000] "deg C"  ECU
+ SG_ Lambda : 16|16@1+ (0.0001,0) [0.5|2] "lambda" ECU
+ SG_ Version : 0|8@1+ (1,0) [0|0] "" ECU
+ SG_ Valid : 8|8@1+ (1,0) [0|1] "" ECU
+ SG_ TemperatureC : 32|16@1+ (1,0) [0|1000] "deg C" ECU
 
 BO_ 401 WidebandDiagData: 8 WidebandController
- SG_ Esr : 0|16@1+ (1,0) [0|10000] "ohms"  ECU
- SG_ NernstDc : 16|16@1+ (0.001,0) [0|1.5] "volt"  ECU
- SG_ PumpDuty : 32|8@1+ (0.392157,0) [0|100] "%"  ECU
- SG_ Status : 40|8@1+ (1,0) [0|0] ""  ECU
- SG_ HeaterDuty : 48|8@1+ (0.392157,0) [0|100] "%"  ECU
+ SG_ Esr : 0|16@1+ (1,0) [0|10000] "ohms" ECU
+ SG_ NernstDc : 16|16@1+ (0.001,0) [0|1.5] "volt" ECU
+ SG_ PumpDuty : 32|8@1+ (0.392157,0) [0|100] "%" ECU
+ SG_ Status : 40|8@1+ (1,0) [0|0] "" ECU
+ SG_ HeaterDuty : 48|8@1+ (0.392157,0) [0|100] "%" ECU
 
-BO_ 2398420992 WidebandControl: 2 ECU
- SG_ BatteryVoltage : 0|8@1+ (0.1,0) [0|25] "volt"  WidebandController
- SG_ HeaterEnable : 8|8@1+ (1,0) [0|1] ""  WidebandController
+BO_ 250871808 SetIndex: 2 ECU
+ SG_ BaseIdHigh : 0|8@1+ (1,0) [0|7] "" WidebandController
+ SG_ BaseIdLow : 8|8@1+ (1,0) [0|255] "" WidebandController
 
+BO_ 250937344 WidebandControl: 2 ECU
+ SG_ BatteryVoltage : 0|8@1+ (0.1,0) [0|25] "volt" WidebandController
+ SG_ HeaterEnable : 8|8@1+ (1,0) [0|1] "" WidebandController
 
+BO_ 251002880 Ping: 1 ECU
+ SG_ HwIdx : 0|8@1+ (1,0) [0|7] "" WidebandController
 
-CM_ BO_ 400 "Increment ID by 2*N for the N-th controller";
+BO_ 251068416 SetSensorType: 2 ECU
+ SG_ HwIdx : 0|8@1+ (1,0) [0|7] "" WidebandController
+ SG_ SensorType : 8|8@1+ (1,0) [0|3] "" WidebandController
+
+BO_ 251133952 HeaterConfig: 3 ECU
+ SG_ HeaterSupplyOffVoltage : 0|8@1+ (0.1,0) [0|25.5] "volt" WidebandController
+ SG_ HeaterSupplyOnVoltage : 8|8@1+ (0.1,0) [0|25.5] "volt" WidebandController
+ SG_ PreheatTimeSec : 16|8@1+ (1,0) [0|255] "s" WidebandController
+
+CM_ BO_ 400 "Increment ID by offset for each channel. Base 0x190.";
 CM_ SG_ 400 Version "Currently 0xA0";
 CM_ SG_ 400 Valid "Set to 1 when the lambda value is valid";
-CM_ BO_ 401 "Increment ID by 2*N for the N-th controller";
-CM_ BO_ 2398420992 "Sent by ECU to control wideband controller";
-CM_ SG_ 2398420992 BatteryVoltage "Provide system supply voltage for heater supply voltage compensation";
-CM_ SG_ 2398420992 HeaterEnable "Set to 1 to allow sensor heating once engine runs";
-
+CM_ BO_ 401 "Increment ID by offset for each channel. Base 0x190+1.";
+CM_ BO_ 250871808 "Set CAN base ID from ECU. ID 0xEF40000. DLC 2 only. [0]=high, [1]=low (e.g. 01 90=0x190).";
+CM_ BO_ 250937344 "Sent by ECU to control wideband. ID 0xEF50000.";
+CM_ SG_ 250937344 BatteryVoltage "Provide system supply voltage for heater supply voltage compensation";
+CM_ SG_ 250937344 HeaterEnable "Set to 1 to allow sensor heating once engine runs";
+CM_ BO_ 251002880 "Ping from ECU. ID 0xEF60000. Payload: base CAN ID (DLC 1=low byte, DLC 2=[high,low] e.g. 01 90=0x190). Controller replies with Pong if it matches.";
+CM_ BO_ 251068416 "Set sensor type from ECU. ID 0xEF70000. 0=LSU4.9, 1=LSU4.2, 2=LSU ADV, 3=FAE LSU4.9.";
+CM_ BO_ 251133952 "Heater config from ECU. ID 0xEF80000. Persists to flash.";
+CM_ SG_ 251133952 HeaterSupplyOffVoltage "Battery below this (0.1V) disables heater auto-start. Default 85=8.5V.";
+CM_ SG_ 251133952 HeaterSupplyOnVoltage "Battery above this (0.1V) allows heater auto-start. Default 95=9.5V.";
+CM_ SG_ 251133952 PreheatTimeSec "Preheat duration in seconds. 0=use firmware default.";

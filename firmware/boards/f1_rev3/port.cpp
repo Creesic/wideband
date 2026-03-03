@@ -97,6 +97,7 @@ void SetupESRDriver(SensorType sensor)
                 PAL_MODE_OUTPUT_PUSHPULL);
         break;
         case SensorType::LSU49:
+        case SensorType::FAE_LSU49:
             /* disable all others ESR drivers */
             palSetPadMode(NERNST_42_ESR_DRIVER_PORT, NERNST_42_ESR_DRIVER_PIN,
                 PAL_MODE_INPUT);
@@ -132,6 +133,7 @@ int GetESRSupplyR()
         case SensorType::LSU42:
             return 6800;
         case SensorType::LSU49:
+        case SensorType::FAE_LSU49:
             return 22000;
         case SensorType::LSUADV:
             return 47000;

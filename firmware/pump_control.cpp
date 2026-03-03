@@ -7,6 +7,56 @@
 
 #include "ch.h"
 
+static float pumpGainAdjust = 1.0f;
+
+void SetPumpGainAdjust(float ratio)
+{
+    pumpGainAdjust = ratio;
+}
+
+static float f_abs(float x)
+{
+    return x > 0 ? x : -x;
+}
+
+class SensorDetector
+{
+public:
+    void feed(int pumpCh, const ISampler& sampler)
+    {
+        if (cycle < 25) {
+            SetPumpCurrentTarget(pumpCh, 1000);
+            nernstHi = sampler.GetNernstDc();
+        } else {
+            SetPumpCurrentTarget(pumpCh, -1000);
+            nernstLo = sampler.GetNernstDc();
+        }
+        if (++cycle >= 50) {
+            float amplitude = f_abs(nernstHi - nernstLo);
+            if (amplitude > maxAmplitude) {
+                maxAmplitude = amplitude;
+            }
+            cycle = 0;
+            counter++;
+        }
+    }
+    void reset()
+    {
+        cycle = counter = 0;
+        nernstHi = nernstLo = 0.0f;
+        maxAmplitude = 0.0f;
+    }
+
+private:
+    int cycle = 0;
+    int counter = 0;
+    float nernstHi = 0.0f;
+    float nernstLo = 0.0f;
+    float maxAmplitude = 0.0f;
+};
+
+static SensorDetector sensorDetector[AFR_CHANNELS];
+
 struct pump_control_state {
     Pid pumpPid;
 };
@@ -37,23 +87,29 @@ static void PumpThread(void*)
             const auto& sampler = GetSampler(ch);
             const auto& heater = GetHeaterController(ch);
 
-            // Only actuate pump when running closed loop!
+            float sensorTemp = sampler.GetSensorTemperature();
+            float targetTemp = heater.GetTargetTemp();
+
+            // Only actuate pump when hot enough to not hurt the sensor
             if (heater.IsRunningClosedLoop() ||
-#ifdef START_PUMP_TEMP_OFFSET
-                (sampler.GetSensorTemperature() >= heater.GetTargetTemp() - START_PUMP_TEMP_OFFSET) ||
-#endif
-                (0))
+                (sensorTemp >= targetTemp - START_PUMP_TEMP_OFFSET))
             {
                 float nernstVoltage = sampler.GetNernstDc();
 
                 float result = s.pumpPid.GetOutput(NERNST_TARGET, nernstVoltage);
 
-                // result is in mA
-                SetPumpCurrentTarget(ch, result * 1000);
+                // result is in mA, scaled by ECU-adjustable gain
+                SetPumpCurrentTarget(ch, (int32_t)(result * 1000 * pumpGainAdjust));
             }
+#ifdef START_SENSOR_DETECTION_TEMP_OFFSET
+            else if (sensorTemp >= targetTemp - START_SENSOR_DETECTION_TEMP_OFFSET)
+            {
+                sensorDetector[ch].feed(ch, sampler);
+            }
+#endif
             else
             {
-                // Otherwise set zero pump current to avoid damaging the sensor
+                sensorDetector[ch].reset();
                 SetPumpCurrentTarget(ch, 0);
             }
         }

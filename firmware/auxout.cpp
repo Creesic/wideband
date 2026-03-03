@@ -128,12 +128,20 @@ static float AuxGetInputSignal(AuxOutputMode sel)
         case AuxOutputMode::Afr0:
             return 14.7f * GetLambda(0);
         case AuxOutputMode::Afr1:
+#if (AFR_CHANNELS > 1)
             return 14.7f * GetLambda(1);
+#else
+            return 14.7f * GetLambda(0);
+#endif
         case AuxOutputMode::Lambda0:
             return GetLambda(0);
         case AuxOutputMode::Lambda1:
+#if (AFR_CHANNELS > 1)
             return GetLambda(1);
-#if HAL_USE_SPI
+#else
+            return GetLambda(0);
+#endif
+#if (EGT_CHANNELS > 0) && HAL_USE_SPI
         case AuxOutputMode::Egt0:
             return getEgtDrivers()[0].temperature;
         case AuxOutputMode::Egt1:

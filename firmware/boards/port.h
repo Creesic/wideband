@@ -30,6 +30,7 @@ enum class SensorType : uint8_t {
     LSU49 = 0,
     LSU42 = 1,
     LSUADV = 2,
+    FAE_LSU49 = 3,
 };
 
 enum class AuxOutputMode : uint8_t {
@@ -45,7 +46,7 @@ class Configuration {
 private:
     // Increment this any time the configuration format changes
     // It is stored along with the data to ensure that it has been written before
-    static constexpr uint32_t ExpectedTag = 0xDEADBE01;
+    static constexpr uint32_t ExpectedTag = 0xDEADBE03;
     uint32_t Tag = ExpectedTag;
 
 public:
@@ -72,9 +73,9 @@ public:
                 bool RusEfiTxDiag:1;
                 bool AemNetTx:1;
 
-                uint8_t RusEfiIdOffset;
+                uint16_t RusEfiBaseId;  // Base CAN ID for this channel (StandardData at base, DiagData at base+1)
                 uint8_t AemNetIdOffset;
-                uint8_t pad[5];
+                uint8_t pad[4];
             } afr[2];
 
             // per EGT channel settings
@@ -87,6 +88,8 @@ public:
                 uint8_t AemNetIdOffset;
                 uint8_t pad[5];
             } egt[2];
+
+            HeaterConfig heaterConfig;
         } __attribute__((packed));
 
         // pad to 256 bytes including tag

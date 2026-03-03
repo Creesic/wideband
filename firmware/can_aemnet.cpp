@@ -36,9 +36,7 @@ struct UEGOData
     uint8_t Flags;
     // [6] - Sensor Fault
     uint8_t Faults;
-};
-// TODO!!!
-// __attribute__((packed));
+} __attribute__((packed));
 
 static_assert(sizeof(UEGOData) == 8);
 
@@ -52,9 +50,7 @@ struct EgtData
     // 1 degC/bit, 0 to 65535 degC
     beuint16_t TemperatureC;
     uint8_t pad[6];
-};
-//TODO!!!!
-// __attribute__((packed));
+} __attribute__((packed));
 
 static_assert(sizeof(EgtData) == 8);
 
@@ -86,7 +82,7 @@ void SendAemNetUEGOFormat(uint8_t ch)
         frame.get().Oxygen = 0; // TODO:
         frame.get().SystemVolts = sampler.GetInternalHeaterVoltage() * 10;
         frame.get().Flags =
-            ((configuration->sensorType == SensorType::LSU49) ? 0x02 : 0x00) |
+            ((configuration->sensorType == SensorType::LSU49 || configuration->sensorType == SensorType::FAE_LSU49) ? 0x02 : 0x00) |
             ((LambdaIsValid(ch)) ? 0x80 : 0x00);
         frame.get().Faults = 0; //TODO:
     }

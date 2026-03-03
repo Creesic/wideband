@@ -138,12 +138,14 @@ AnalogResult AnalogSample()
             res.ch[i].NernstVoltage = NernstRaw;
         }
     }
-    /* left */
+    /* left (ch0) */
     res.ch[0].PumpCurrentVoltage = AverageSamples(adcBuffer, 2);
     res.ch[0].HeaterSupplyVoltage = l_heater_voltage;
-    /* right */
+#if (AFR_CHANNELS > 1)
+    /* right (ch1) */
     res.ch[1].PumpCurrentVoltage = AverageSamples(adcBuffer, 0);
     res.ch[1].HeaterSupplyVoltage = r_heater_voltage;
+#endif
 
     return res;
 }
@@ -166,6 +168,7 @@ void SetupESRDriver(SensorType sensor)
                 PAL_MODE_OUTPUT_PUSHPULL);
         break;
         case SensorType::LSU49:
+        case SensorType::FAE_LSU49:
             /* disable all others ESR drivers */
             palSetPadMode(NERNST_42_ESR_DRIVER_PORT, NERNST_42_ESR_DRIVER_PIN,
                 PAL_MODE_INPUT);
@@ -201,6 +204,7 @@ int GetESRSupplyR()
         case SensorType::LSU42:
             return 6800;
         case SensorType::LSU49:
+        case SensorType::FAE_LSU49:
             return 22000;
         case SensorType::LSUADV:
             return 47000;

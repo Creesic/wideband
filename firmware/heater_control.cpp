@@ -14,8 +14,14 @@ HeaterControllerBase::HeaterControllerBase(int ch, int preheatTimeSec, int warmu
 
 void HeaterControllerBase::Configure(float targetTempC, float targetEsr)
 {
+    Configure(targetTempC, targetEsr, nullptr);
+}
+
+void HeaterControllerBase::Configure(float targetTempC, float targetEsr, const HeaterConfig* config)
+{
     m_targetTempC = targetTempC;
     m_targetEsr = targetEsr;
+    m_heaterConfig = config;
 
     m_preheatTimer.reset();
     m_warmupTimer.reset();
@@ -45,20 +51,24 @@ HeaterState HeaterControllerBase::GetHeaterState() const
 
 HeaterState HeaterControllerBase::GetNextState(HeaterState currentState, HeaterAllow heaterAllowState, float heaterSupplyVoltage, float sensorTemp)
 {
+    float supplyOffV = m_heaterConfig ? (m_heaterConfig->HeaterSupplyOffVoltage * 0.1f) : HEATER_SUPPLY_OFF_VOLTAGE;
+    float supplyOnV = m_heaterConfig ? (m_heaterConfig->HeaterSupplyOnVoltage * 0.1f) : HEATER_SUPPLY_ON_VOLTAGE;
+    int preheatSec = m_heaterConfig && m_heaterConfig->PreheatTimeSec ? m_heaterConfig->PreheatTimeSec : m_preheatTimeSec;
+
     bool heaterAllowed = heaterAllowState == HeaterAllow::Allowed;
 
     // Check battery voltage for thresholds only if there is still no command over CAN
     if (heaterAllowState == HeaterAllow::Unknown)
     {
         // measured voltage too low to auto-start heating
-        if (heaterSupplyVoltage < HEATER_SUPPLY_OFF_VOLTAGE)
+        if (heaterSupplyVoltage < supplyOffV)
         {
             m_heaterStableTimer.reset();
             // set fault
             SetFault(ch, Fault::SensorNoHeatSupply);
             return HeaterState::NoHeaterSupply;
         }
-        else if (heaterSupplyVoltage > HEATER_SUPPLY_ON_VOLTAGE)
+        else if (heaterSupplyVoltage > supplyOnV)
         {
             // measured voltage is high enougth to auto-start heating, wait some time to stabilize
             heaterAllowed = m_heaterStableTimer.hasElapsedSec(HEATER_BATTERY_STAB_TIME);
@@ -92,7 +102,7 @@ HeaterState HeaterControllerBase::GetNextState(HeaterState currentState, HeaterA
             #endif
 
             // If preheat timeout, or sensor is already hot (engine running?)
-            if (m_preheatTimer.hasElapsedSec(m_preheatTimeSec) || sensorTemp > closedLoopTemp)
+            if (m_preheatTimer.hasElapsedSec(preheatSec) || sensorTemp > closedLoopTemp)
             {
                 // If enough time has elapsed, start the ramp
                 // Start the ramp at 7 volts
@@ -204,15 +214,23 @@ void HeaterControllerBase::Update(const ISampler& sampler, HeaterAllow heaterAll
     float sensorEsr = sampler.GetSensorInternalResistance();
     float sensorTemperature = sampler.GetSensorTemperature();
 
-    #ifdef HEATER_INPUT_DIVIDER
-        // if board has ability to measure heater supply localy - use it
-        float heaterSupplyVoltage = sampler.GetInternalHeaterVoltage();
-    #else
-        // this board rely on measured voltage from ECU
-        float heaterSupplyVoltage = GetRemoteBatteryVoltage();
-    #endif
+    // Prefer ECU-provided battery when CAN message received; use internal sense when Unknown
+    float heaterSupplyVoltage;
+#ifdef HEATER_INPUT_DIVIDER
+    if (heaterAllowState == HeaterAllow::Unknown) {
+        heaterSupplyVoltage = sampler.GetInternalHeaterVoltage();
+    } else {
+        heaterSupplyVoltage = GetRemoteBatteryVoltage();
+    }
+#else
+    if (heaterAllowState == HeaterAllow::Unknown) {
+        heaterSupplyVoltage = sampler.GetInternalHeaterVoltage();
+    } else {
+        heaterSupplyVoltage = GetRemoteBatteryVoltage();
+    }
+#endif
 
-    // Run the state machine
+    // Run the state machine with raw voltage (enable/disable decision must use real reading)
     heaterState = GetNextState(heaterState, heaterAllowState, heaterSupplyVoltage, sensorTemperature);
     float heaterVoltage = GetVoltageForState(heaterState, sensorEsr);
 
@@ -221,8 +239,10 @@ void HeaterControllerBase::Update(const ISampler& sampler, HeaterAllow heaterAll
         heaterVoltage = 12;
     }
 
+    // Avoid divide-by-zero in duty calc only; do NOT use for enable decision above
+    float dutySupplyV = (heaterSupplyVoltage < 3.0f) ? 12.0f : heaterSupplyVoltage;
     // duty = (V_eff / V_batt) ^ 2
-    float voltageRatio = (heaterSupplyVoltage < 1.0f) ? 0 : heaterVoltage / heaterSupplyVoltage;
+    float voltageRatio = (dutySupplyV < 1.0f) ? 0 : heaterVoltage / dutySupplyV;
     float duty = voltageRatio * voltageRatio;
 
     #ifdef HEATER_MAX_DUTY

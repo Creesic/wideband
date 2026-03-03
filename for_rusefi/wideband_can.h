@@ -22,8 +22,18 @@
 #define WB_BL_DATA_BASE ((WB_BL_BASE + WB_OPCODE_DATA) << 16)
 // 0xEF3'0000
 #define WB_BL_REBOOT ((WB_BL_BASE + WB_OPCODE_REBOOT) << 16)
+#define WB_OPCODE_SET_INDEX 4
+#define WB_OPCODE_ECU_STATUS 5
+
+#define WB_BL_CMD(opcode, extra) (((WB_BL_BASE | (opcode)) << 16) | (extra))
+// Extract top 8 bits of 29-bit CAN ID - our protocol uses 0xEF (bits 27-20)
+#define WB_MSG_GET_HEADER(id) (((id) >> 20) & 0xFF)
+
 #define WB_MSG_SET_INDEX 0xEF4'0000
-#define WB_MGS_ECU_STATUS 0xEF5'0000
+#define WB_MSG_ECU_STATUS 0xEF5'0000
+#define WB_MSG_PING 0xEF6'0000
+#define WB_MSG_SET_SENSOR_TYPE 0xEF7'0000
+#define WB_MSG_SET_HEATER_CONFIG 0xEF8'0000
 #define WB_DATA_BASE_ADDR 0x190
 
 // we transmit every 10ms

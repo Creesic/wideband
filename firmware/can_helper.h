@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstddef>
 #include "hal.h"
+#include "can.h"
 
 /**
  * Represent a message to be transmitted over CAN.

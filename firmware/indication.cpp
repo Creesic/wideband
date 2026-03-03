@@ -30,7 +30,7 @@ indicationThreadData indData[] = {
 };
 
 static THD_WORKING_AREA(waIndicationThread, 128);
-#ifdef LED_R_GREEN_PORT
+#if defined(LED_R_GREEN_PORT) && (AFR_CHANNELS > 1)
 static THD_WORKING_AREA(waIndicationThread2, 128);
 #endif
 
@@ -74,7 +74,7 @@ static void IndicationThread(void *ptr)
 void InitIndication()
 {
     chThdCreateStatic(waIndicationThread, sizeof(waIndicationThread), NORMALPRIO, IndicationThread, &indData[0]);
-#ifdef LED_R_GREEN_PORT
+#if defined(LED_R_GREEN_PORT) && (AFR_CHANNELS > 1)
     chThdCreateStatic(waIndicationThread2, sizeof(waIndicationThread2), NORMALPRIO, IndicationThread, &indData[1]);
 #endif
 }

@@ -71,7 +71,7 @@ void Configuration::LoadDefaults()
         // enable RusEFI protocol
         afr[i].RusEfiTx = true;
         afr[i].RusEfiTxDiag = true;
-        afr[i].RusEfiIdOffset = 2 * i;
+        afr[i].RusEfiBaseId = 0x190 + 2 * i;
 
         // Disable AemNet
         afr[i].AemNetTx = false;
@@ -88,6 +88,10 @@ void Configuration::LoadDefaults()
         egt[i].AemNetTx = true;
         egt[i].AemNetIdOffset = i;
     }
+
+    heaterConfig.HeaterSupplyOffVoltage = 85;   // 8.5V
+    heaterConfig.HeaterSupplyOnVoltage = 95;    // 9.5V
+    heaterConfig.PreheatTimeSec = HEATER_PREHEAT_TIME;
 
     /* Finaly */
     Tag = ExpectedTag;
@@ -206,13 +210,14 @@ void checkDfuAndJump()
     }
 }
 
-void ToggleESRDriver(SensorType sensor)
-{
-    switch (sensor) {
+    void ToggleESRDriver(SensorType sensor)
+    {
+        switch (sensor) {
         case SensorType::LSU42:
             palTogglePad(NERNST_42_ESR_DRIVER_PORT, NERNST_42_ESR_DRIVER_PIN);
         break;
         case SensorType::LSU49:
+        case SensorType::FAE_LSU49:
             palTogglePad(NERNST_49_ESR_DRIVER_PORT, NERNST_49_ESR_DRIVER_PIN);
         break;
         case SensorType::LSUADV:

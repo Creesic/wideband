@@ -69,18 +69,20 @@ static void HeaterThread(void*)
     chThdSleepMilliseconds(1000);
 
     // Configure heater controllers for sensor type
+    const HeaterConfig* hcfg = &GetConfiguration()->heaterConfig;
     for (i = 0; i < AFR_CHANNELS; i++) {
         auto& h = heaterControllers[i];
         switch (GetSensorType()) {
             case SensorType::LSU42:
-                h.Configure(730, 80);
+                h.Configure(730, 80, hcfg);
                 break;
             case SensorType::LSUADV:
-                h.Configure(785, 300);
+                h.Configure(785, 300, hcfg);
                 break;
             case SensorType::LSU49:
+            case SensorType::FAE_LSU49:
             default:
-                h.Configure(780, 300);
+                h.Configure(780, 300, hcfg);
                 break;
         }
     }

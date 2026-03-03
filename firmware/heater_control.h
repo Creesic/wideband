@@ -33,6 +33,7 @@ class HeaterControllerBase : public IHeaterController
 public:
     HeaterControllerBase(int ch, int preheatTimeSec, int warmupTimeSec);
     void Configure(float targetTempC, float targetEsr);
+    void Configure(float targetTempC, float targetEsr, const HeaterConfig* config);
     void Update(const ISampler& sampler, HeaterAllow heaterAllowState) override;
 
     bool IsRunningClosedLoop() const override;
@@ -71,6 +72,8 @@ private:
 
     const int m_preheatTimeSec;
     const int m_warmupTimeSec;
+
+    const HeaterConfig* m_heaterConfig = nullptr;  // null = use macro defaults
 
     int m_retryTime = 0;
 
